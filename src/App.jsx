@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
+import Projects from './pages/Projects'
 
 function App() {
     return (
@@ -29,6 +30,12 @@ function App() {
                 <Route
                     path="/dashboard"
                     element={<Dashboard />}
+                />
+
+                {/* Projects Route */}
+                <Route
+                    path="/projects"
+                    element={<Projects />}
                 />
 
                 {/* Fallback Route */}
