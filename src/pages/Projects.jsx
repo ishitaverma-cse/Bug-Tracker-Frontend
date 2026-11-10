@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
     FolderKanban,
     Plus,
@@ -21,6 +22,7 @@ import {
 const API_URL = 'http://localhost:5000/api/projects'
 
 const Projects = () => {
+    const navigate = useNavigate()
     const [projects, setProjects] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
@@ -742,6 +744,17 @@ const Projects = () => {
 
                                         {/* Actions */}
                                         <div className="mt-5 flex gap-3 border-t border-slate-800 pt-4">
+
+                                            <button
+                                                onClick={() =>
+                                                    navigate(`/projects/${project._id}/tickets`)
+                                                }
+                                                className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-500/10 px-4 py-2.5 text-sm font-medium text-indigo-300 transition hover:border-indigo-500/50 hover:bg-indigo-500/20 hover:text-indigo-200"
+                                            >
+                                                <ArrowUpRight size={15} />
+                                                Tickets
+                                            </button>
+
                                             <button
                                                 onClick={() => openEditModal(project)}
                                                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800/40 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-indigo-500/40 hover:bg-indigo-500/10 hover:text-indigo-300"

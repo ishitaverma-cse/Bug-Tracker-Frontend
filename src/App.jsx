@@ -4,6 +4,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
+import Tickets from './pages/Tickets'
 
 function App() {
     return (
@@ -36,6 +37,12 @@ function App() {
                 <Route
                     path="/projects"
                     element={<Projects />}
+                />
+
+                {/* Project Tickets Route */}
+                <Route
+                    path="/projects/:projectId/tickets"
+                    element={<Tickets />}
                 />
 
                 {/* Fallback Route */}
