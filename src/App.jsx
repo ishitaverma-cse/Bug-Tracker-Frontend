@@ -5,11 +5,15 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import Projects from './pages/Projects'
 import Tickets from './pages/Tickets'
+import Profile from './pages/Profile'
+
+import DashboardLayout from './layouts/DashboardLayout'
 
 function App() {
     return (
         <BrowserRouter>
             <Routes>
+
                 {/* Default Route */}
                 <Route
                     path="/"
@@ -27,29 +31,41 @@ function App() {
                     element={<Register />}
                 />
 
-                {/* Dashboard Route */}
-                <Route
-                    path="/dashboard"
-                    element={<Dashboard />}
-                />
+                {/* Dashboard Layout */}
+                <Route element={<DashboardLayout />}>
 
-                {/* Projects Route */}
-                <Route
-                    path="/projects"
-                    element={<Projects />}
-                />
+                    {/* Dashboard */}
+                    <Route
+                        path="/dashboard"
+                        element={<Dashboard />}
+                    />
 
-                {/* Project Tickets Route */}
-                <Route
-                    path="/projects/:projectId/tickets"
-                    element={<Tickets />}
-                />
+                    {/* Projects */}
+                    <Route
+                        path="/projects"
+                        element={<Projects />}
+                    />
+
+                    {/* Project Tickets */}
+                    <Route
+                        path="/projects/:projectId/tickets"
+                        element={<Tickets />}
+                    />
+
+                    {/* User Profile */}
+                    <Route
+                        path="/profile"
+                        element={<Profile />}
+                    />
+
+                </Route>
 
                 {/* Fallback Route */}
                 <Route
                     path="*"
                     element={<Navigate to="/login" replace />}
                 />
+
             </Routes>
         </BrowserRouter>
     )

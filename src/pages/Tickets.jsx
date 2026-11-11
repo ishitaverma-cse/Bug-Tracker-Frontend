@@ -517,10 +517,10 @@ function Tickets() {
 
                     <button
                         onClick={openCreateModal}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 px-5 py-3 font-semibold text-white shadow-lg shadow-indigo-500/10 transition hover:bg-indigo-400"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/10 transition duration-200 hover:bg-indigo-400 active:scale-[0.98] sm:w-auto sm:px-5 sm:py-3"
                     >
-                        <Plus size={18} />
-                        Create Ticket
+                        <Plus size={18} className="shrink-0" />
+                        <span className="whitespace-nowrap">Create Project</span>
                     </button>
                 </header>
 
