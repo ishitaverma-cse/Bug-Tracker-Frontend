@@ -23,10 +23,15 @@ import {
     GripVertical,
     ChevronLeft,
     ChevronRight,
+    ChevronDown,
+    ChevronUp,
+    MessageCircle,
+    Send,
 } from 'lucide-react'
 
 const API_URL = 'http://localhost:5000/api/tickets'
 const PROJECT_API_URL = 'http://localhost:5000/api/projects'
+const COMMENT_API_URL = 'http://localhost:5000/api/comments'
 
 function Tickets() {
     const { projectId } = useParams()
@@ -60,6 +65,15 @@ function Tickets() {
     const [ticketToDelete, setTicketToDelete] = useState(null)
     const [deleting, setDeleting] = useState(false)
     const [deleteError, setDeleteError] = useState('')
+
+    // Comment Ticket State
+    const [expandedComments, setExpandedComments] = useState({})
+    const [comments, setComments] = useState({})
+    const [commentTexts, setCommentTexts] = useState({})
+    const [commentLoading, setCommentLoading] = useState({})
+    const [commentSubmitting, setCommentSubmitting] = useState({})
+    const [commentErrors, setCommentErrors] = useState({})
+    const [commentCounts, setCommentCounts] = useState({})
 
     const [formData, setFormData] = useState({
         title: '',
@@ -112,6 +126,37 @@ function Tickets() {
 
                 setProject(currentProject)
                 setTickets(ticketData.tickets || [])
+
+                // Fetch comment counts for all tickets
+                const ticketList = ticketData.tickets || []
+
+                const commentCountResults = await Promise.all(
+                    ticketList.map(async (ticket) => {
+                        try {
+                            const response = await fetch(
+                                `${COMMENT_API_URL}/${ticket._id}`,
+                                { headers }
+                            )
+
+                            const data = await response.json()
+
+                            if (!response.ok) {
+                                return [ticket._id, 0]
+                            }
+
+                            return [
+                                ticket._id,
+                                (data.comments || []).length,
+                            ]
+                        } catch {
+                            return [ticket._id, 0]
+                        }
+                    })
+                )
+
+                setCommentCounts(
+                    Object.fromEntries(commentCountResults)
+                )
 
                 // Project owner + team members
                 const members = [
@@ -444,6 +489,156 @@ function Tickets() {
         } finally {
             setDeleting(false)
         }
+    }
+
+    // Fetch comments for a ticket
+    const fetchComments = async (ticketId) => {
+        setCommentLoading((prev) => ({ ...prev, [ticketId]: true }))
+        setCommentErrors((prev) => ({ ...prev, [ticketId]: '' }))
+
+        try {
+            const token = localStorage.getItem('resolveon-token')
+
+            const response = await fetch(`${COMMENT_API_URL}/${ticketId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to fetch comments')
+            }
+
+            setComments((prev) => ({
+                ...prev,
+                [ticketId]: data.comments || [],
+            }))
+        } catch (error) {
+            setCommentErrors((prev) => ({
+                ...prev,
+                [ticketId]: error.message,
+            }))
+        } finally {
+            setCommentLoading((prev) => ({
+                ...prev,
+                [ticketId]: false,
+            }))
+        }
+    }
+
+    // Expand/collapse comments
+    const toggleComments = (ticketId) => {
+        const isExpanded = !!expandedComments[ticketId]
+
+        setExpandedComments((prev) => ({
+            ...prev,
+            [ticketId]: !isExpanded,
+        }))
+
+        if (
+            !isExpanded &&
+            !Object.prototype.hasOwnProperty.call(comments, ticketId)
+        ) {
+            fetchComments(ticketId)
+        }
+    }
+
+    // Handle comment input
+    const handleCommentTextChange = (ticketId, value) => {
+        setCommentTexts((prev) => ({
+            ...prev,
+            [ticketId]: value,
+        }))
+    }
+
+    // Add a comment
+    const handleAddComment = async (ticketId) => {
+        const text = (commentTexts[ticketId] || '').trim()
+
+        if (!text) {
+            setCommentErrors((prev) => ({
+                ...prev,
+                [ticketId]: 'Comment text is required',
+            }))
+            return
+        }
+
+        setCommentSubmitting((prev) => ({
+            ...prev,
+            [ticketId]: true,
+        }))
+
+        setCommentErrors((prev) => ({
+            ...prev,
+            [ticketId]: '',
+        }))
+
+        try {
+            const token = localStorage.getItem('resolveon-token')
+
+            const response = await fetch(`${COMMENT_API_URL}/${ticketId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ text }),
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to add comment')
+            }
+
+            setComments((prev) => ({
+                ...prev,
+                [ticketId]: [
+                    ...(prev[ticketId] || []),
+                    data.comment,
+                ],
+            }))
+
+            // Update comment count instantly
+            setCommentCounts((prev) => ({
+                ...prev,
+                [ticketId]: (prev[ticketId] || 0) + 1,
+            }))
+
+            setCommentTexts((prev) => ({
+                ...prev,
+                [ticketId]: '',
+            }))
+
+        } catch (error) {
+            setCommentErrors((prev) => ({
+                ...prev,
+                [ticketId]: error.message,
+            }))
+        } finally {
+            setCommentSubmitting((prev) => ({
+                ...prev,
+                [ticketId]: false,
+            }))
+        }
+    }
+
+    // Format comment timestamp
+    const formatCommentTime = (date) => {
+        if (!date) return 'Just now'
+
+        const parsedDate = new Date(date)
+
+        if (Number.isNaN(parsedDate.getTime())) return ''
+
+        return parsedDate.toLocaleString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            hour: 'numeric',
+            minute: '2-digit',
+        })
     }
 
     // Kanban Drag-and-Drop: persist status changes through the existing API
@@ -909,6 +1104,153 @@ function Tickets() {
                                                                         <Trash2 size={14} />
                                                                         Delete
                                                                     </button>
+                                                                </div>
+
+                                                                {/* Comments Section */}
+                                                                <div className="mt-3 border-t border-slate-800/80 pt-3">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => toggleComments(ticket._id)}
+                                                                        className="flex w-full items-center justify-between rounded-lg px-1 py-2 text-xs font-semibold text-slate-400 transition hover:text-indigo-300"
+                                                                    >
+                                                                        <span className="inline-flex items-center gap-2">
+                                                                            <MessageCircle size={15} />
+
+                                                                            Comments
+
+                                                                            <span className="rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px]">
+                                                                                {commentCounts[ticket._id] ?? 0}
+                                                                            </span>
+                                                                        </span>
+
+                                                                        {expandedComments[ticket._id] ? (
+                                                                            <ChevronUp size={15} />
+                                                                        ) : (
+                                                                            <ChevronDown size={15} />
+                                                                        )}
+                                                                    </button>
+
+                                                                    {expandedComments[ticket._id] && (
+                                                                        <div className="mt-2 space-y-3">
+                                                                            {/* Loading */}
+                                                                            {commentLoading[ticket._id] && (
+                                                                                <div className="flex items-center justify-center gap-2 py-3 text-xs text-slate-400">
+                                                                                    <Loader2 size={14} className="animate-spin" />
+                                                                                    Loading comments...
+                                                                                </div>
+                                                                            )}
+
+                                                                            {/* Error */}
+                                                                            {commentErrors[ticket._id] && (
+                                                                                <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                                                                                    {commentErrors[ticket._id]}
+                                                                                </p>
+                                                                            )}
+
+                                                                            {/* Empty State */}
+                                                                            {!commentLoading[ticket._id] &&
+                                                                                !commentErrors[ticket._id] &&
+                                                                                comments[ticket._id]?.length === 0 && (
+                                                                                    <div className="py-3 text-center">
+                                                                                        <MessageCircle
+                                                                                            size={20}
+                                                                                            className="mx-auto mb-2 text-slate-600"
+                                                                                        />
+
+                                                                                        <p className="text-xs text-slate-500">
+                                                                                            No comments yet.
+                                                                                        </p>
+
+                                                                                        <p className="mt-1 text-[11px] text-slate-600">
+                                                                                            Start the conversation!
+                                                                                        </p>
+                                                                                    </div>
+                                                                                )}
+
+                                                                            {/* Comments List */}
+                                                                            {!commentLoading[ticket._id] &&
+                                                                                comments[ticket._id]?.length > 0 && (
+                                                                                    <div className="max-h-52 space-y-3 overflow-y-auto pr-1">
+                                                                                        {comments[ticket._id].map((comment) => (
+                                                                                            <div
+                                                                                                key={comment._id}
+                                                                                                className="flex items-start gap-2.5"
+                                                                                            >
+                                                                                                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-500/15 text-indigo-300">
+                                                                                                    <UserRound size={13} />
+                                                                                                </div>
+
+                                                                                                <div className="min-w-0 flex-1">
+                                                                                                    <div className="flex flex-wrap items-center justify-between gap-1">
+                                                                                                        <p className="text-xs font-semibold text-slate-300">
+                                                                                                            {comment.userId?.name || 'User'}
+                                                                                                        </p>
+
+                                                                                                        <span className="text-[10px] text-slate-500">
+                                                                                                            {formatCommentTime(
+                                                                                                                comment.createdAt
+                                                                                                            )}
+                                                                                                        </span>
+                                                                                                    </div>
+
+                                                                                                    <p className="mt-1 whitespace-pre-wrap break-words text-xs leading-relaxed text-slate-400">
+                                                                                                        {comment.text}
+                                                                                                    </p>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                )}
+
+                                                                            {/* Add Comment */}
+                                                                            <div className="space-y-2">
+                                                                                <textarea
+                                                                                    value={commentTexts[ticket._id] || ''}
+                                                                                    onChange={(e) =>
+                                                                                        handleCommentTextChange(
+                                                                                            ticket._id,
+                                                                                            e.target.value
+                                                                                        )
+                                                                                    }
+                                                                                    placeholder="Write a comment..."
+                                                                                    rows={2}
+                                                                                    maxLength={1000}
+                                                                                    className="w-full resize-none rounded-xl border border-slate-700 bg-slate-900/70 px-3 py-2.5 text-xs text-slate-200 placeholder:text-slate-500 outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20"
+                                                                                />
+
+                                                                                <div className="flex items-center justify-between">
+                                                                                    <span className="text-[10px] text-slate-500">
+                                                                                        {(commentTexts[ticket._id] || '').length}/1000
+                                                                                    </span>
+
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => handleAddComment(ticket._id)}
+                                                                                        disabled={
+                                                                                            commentSubmitting[ticket._id] ||
+                                                                                            !(commentTexts[ticket._id] || '').trim()
+                                                                                        }
+                                                                                        className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                                                                    >
+                                                                                        {commentSubmitting[ticket._id] ? (
+                                                                                            <>
+                                                                                                <Loader2
+                                                                                                    size={13}
+                                                                                                    className="animate-spin"
+                                                                                                />
+                                                                                                Sending...
+                                                                                            </>
+                                                                                        ) : (
+                                                                                            <>
+                                                                                                <Send size={13} />
+                                                                                                Send
+                                                                                            </>
+                                                                                        )}
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         )}
