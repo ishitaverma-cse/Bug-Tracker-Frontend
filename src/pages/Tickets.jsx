@@ -44,6 +44,12 @@ function Tickets() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
     const [search, setSearch] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
+
+    const [filterStatus, setFilterStatus] = useState('All')
+    const [filterPriority, setFilterPriority] = useState('All')
+    const [filterAssignee, setFilterAssignee] = useState('All')
+
     const [viewMode, setViewMode] = useState('board')
 
     // Pagination
@@ -83,6 +89,25 @@ function Tickets() {
         assignee: '',
     })
 
+    // Debounce Search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search.trim())
+        }, 350)
+
+        return () => clearTimeout(timer)
+    }, [search])
+
+    // Reset Pagination when Filters Change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [
+        debouncedSearch,
+        filterStatus,
+        filterPriority,
+        filterAssignee,
+    ])
+
     // Fetch Project and Tickets
     useEffect(() => {
         const fetchData = async () => {
@@ -96,9 +121,33 @@ function Tickets() {
                     Authorization: `Bearer ${token}`,
                 }
 
+                // Build ticket filters
+                const queryParams = new URLSearchParams()
+
+                if (filterStatus !== 'All') {
+                    queryParams.append('status', filterStatus)
+                }
+
+                if (filterPriority !== 'All') {
+                    queryParams.append('priority', filterPriority)
+                }
+
+                if (filterAssignee !== 'All') {
+                    queryParams.append('assignee', filterAssignee)
+                }
+
+                if (debouncedSearch) {
+                    queryParams.append('search', debouncedSearch)
+                }
+
+                const queryString = queryParams.toString()
+
+                const ticketsUrl = `${API_URL}/project/${projectId}${queryString ? `?${queryString}` : ''
+                    }`
+
                 const [projectResponse, ticketResponse] = await Promise.all([
                     fetch(PROJECT_API_URL, { headers }),
-                    fetch(`${API_URL}/project/${projectId}`, { headers }),
+                    fetch(ticketsUrl, { headers }),
                 ])
 
                 const projectData = await projectResponse.json()
@@ -181,7 +230,13 @@ function Tickets() {
         }
 
         fetchData()
-    }, [projectId])
+    }, [
+        projectId,
+        debouncedSearch,
+        filterStatus,
+        filterPriority,
+        filterAssignee,
+    ])
 
     // Format Date
     const formatDate = (date) => {
@@ -731,15 +786,8 @@ function Tickets() {
         }
     }
 
-    // Search Tickets
-    const filteredTickets = tickets.filter((ticket) => {
-        const searchTerm = search.trim().toLowerCase()
-
-        return (
-            ticket.title.toLowerCase().includes(searchTerm) ||
-            ticket.description.toLowerCase().includes(searchTerm)
-        )
-    })
+    // Tickets are already filtered by the backend
+    const filteredTickets = tickets
 
     // Kanban Columns
     const kanbanColumns = [
@@ -813,7 +861,7 @@ function Tickets() {
     ).length
 
     return (
-        <div className="min-h-screen bg-slate-950 px-4 py-8 text-white sm:px-6 lg:px-10">
+        <div className="min-h-screen bg-slate-900/70 px-4 py-8 text-white sm:px-6 lg:px-10">
             <div className="mx-auto max-w-7xl">
 
                 {/* Back Button */}
@@ -877,7 +925,7 @@ function Tickets() {
 
                 {/* Overview Metrics */}
                 <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-5 transition-all duration-200 hover:border-slate-700">
                         <div className="flex items-center justify-between">
                             <p className="text-sm text-slate-400">Total Tickets</p>
                             <Ticket size={18} className="text-indigo-400" />
@@ -886,7 +934,7 @@ function Tickets() {
                         <p className="mt-1 text-xs text-slate-500">All project issues</p>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-5 transition-all duration-200 hover:border-slate-700">
                         <div className="flex items-center justify-between">
                             <p className="text-sm text-slate-400">Open</p>
                             <CircleAlert size={18} className="text-sky-400" />
@@ -895,7 +943,7 @@ function Tickets() {
                         <p className="mt-1 text-xs text-slate-500">Awaiting action</p>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-5 transition-all duration-200 hover:border-slate-700">
                         <div className="flex items-center justify-between">
                             <p className="text-sm text-slate-400">In Progress</p>
                             <Clock3 size={18} className="text-indigo-400" />
@@ -904,7 +952,7 @@ function Tickets() {
                         <p className="mt-1 text-xs text-slate-500">Currently being worked on</p>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-5 transition-all duration-200 hover:border-slate-700">
                         <div className="flex items-center justify-between">
                             <p className="text-sm text-slate-400">Completed</p>
                             <CheckCircle2 size={18} className="text-emerald-400" />
@@ -914,58 +962,238 @@ function Tickets() {
                     </div>
                 </div>
 
+
                 {/* Toolbar */}
-                <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-slate-800 bg-slate-900/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="relative w-full sm:max-w-md">
-                        <Search
-                            size={17}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
-                        />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => {
-                                setSearch(e.target.value)
-                                setCurrentPage(1)
-                            }}
-                            placeholder="Search tickets by title or description..."
-                            className="w-full rounded-xl border border-slate-800 bg-slate-950 py-3 pl-10 pr-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-indigo-500"
-                        />
+                <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/70 p-4 sm:p-5">
+
+                    {/* Search + View Toggle */}
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+
+                        {/* Search */}
+                        <div className="relative w-full lg:max-w-xl">
+                            <Search
+                                size={18}
+                                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
+                            />
+
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => {
+                                    setSearch(e.target.value)
+                                    setCurrentPage(1)
+                                }}
+                                placeholder="Search tickets by title or description..."
+                                className="w-full rounded-xl border border-slate-800 bg-slate-950 py-3 pl-11 pr-11 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                            />
+
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSearch('')
+                                        setCurrentPage(1)
+                                    }}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-500 transition hover:bg-slate-800 hover:text-white"
+                                    title="Clear search"
+                                >
+                                    <X size={16} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Board / List Toggle */}
+                        <div className="flex w-full items-center rounded-xl border border-slate-800 bg-slate-950 p-1 lg:w-auto">
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('board')}
+                                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition lg:flex-none ${viewMode === 'board'
+                                    ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/20'
+                                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                                    }`}
+                            >
+                                <LayoutGrid size={16} />
+                                Board
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('list')}
+                                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition lg:flex-none ${viewMode === 'list'
+                                    ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/20'
+                                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                                    }`}
+                            >
+                                <List size={16} />
+                                List
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setViewMode('board')}
-                            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${viewMode === 'board'
-                                ? 'bg-indigo-500 text-white'
-                                : 'border border-slate-800 bg-slate-950 text-slate-400 hover:text-white'
-                                }`}
-                        >
-                            <LayoutGrid size={16} />
-                            Board
-                        </button>
+                    {/* Filter Section */}
+                    <div className="mt-5 border-t border-slate-800 pt-4">
 
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${viewMode === 'list'
-                                ? 'bg-indigo-500 text-white'
-                                : 'border border-slate-800 bg-slate-950 text-slate-400 hover:text-white'
-                                }`}
-                        >
-                            <List size={16} />
-                            List
-                        </button>
+                        {/* Filter Header */}
+                        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                                <Layers3 size={15} className="text-indigo-400" />
+
+                                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                    Filter Tickets
+                                </span>
+
+                                {(filterStatus !== 'All' ||
+                                    filterPriority !== 'All' ||
+                                    filterAssignee !== 'All') && (
+                                        <span className="rounded-full border border-indigo-500/20 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-semibold text-indigo-300">
+                                            Active
+                                        </span>
+                                    )}
+                            </div>
+
+                            {(search ||
+                                filterStatus !== 'All' ||
+                                filterPriority !== 'All' ||
+                                filterAssignee !== 'All') && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSearch('')
+                                            setFilterStatus('All')
+                                            setFilterPriority('All')
+                                            setFilterAssignee('All')
+                                            setCurrentPage(1)
+                                        }}
+                                        className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-400 transition hover:text-indigo-300"
+                                    >
+                                        <X size={14} />
+                                        Clear filters
+                                    </button>
+                                )}
+                        </div>
+
+                        {/* Filter Dropdowns */}
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+
+                            {/* Status Filter */}
+                            <div>
+                                <label className="mb-1.5 block text-[11px] font-medium text-slate-500">
+                                    Status
+                                </label>
+
+                                <div className="relative">
+                                    <select
+                                        value={filterStatus}
+                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                        className={`w-full cursor-pointer appearance-none rounded-xl border bg-slate-950 py-3 pl-3.5 pr-10 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 ${filterStatus !== 'All'
+                                            ? 'border-indigo-500/40 text-indigo-300'
+                                            : 'border-slate-800 text-slate-300 hover:border-slate-700'
+                                            }`}
+                                    >
+                                        <option value="All">All Statuses</option>
+                                        <option value="Open">Open</option>
+                                        <option value="In Progress">In Progress</option>
+                                        <option value="Resolved">Resolved</option>
+                                        <option value="Closed">Closed</option>
+                                    </select>
+
+                                    <ChevronDown
+                                        size={16}
+                                        className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500"
+                                    />
+                                </div>
+                            </div>
+
+
+                            {/* Priority Filter */}
+                            <div>
+                                <label className="mb-1.5 block text-[11px] font-medium text-slate-500">
+                                    Priority
+                                </label>
+
+                                <div className="relative">
+                                    <select
+                                        value={filterPriority}
+                                        onChange={(e) => setFilterPriority(e.target.value)}
+                                        className={`w-full cursor-pointer appearance-none rounded-xl border bg-slate-950 py-3 pl-3.5 pr-10 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 ${filterPriority !== 'All'
+                                            ? 'border-indigo-500/40 text-indigo-300'
+                                            : 'border-slate-800 text-slate-300 hover:border-slate-700'
+                                            }`}
+                                    >
+                                        <option value="All">All Priorities</option>
+                                        <option value="High">High</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="Low">Low</option>
+                                    </select>
+
+                                    <ChevronDown
+                                        size={16}
+                                        className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 transition"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Assignee Filter */}
+                            <div>
+                                <label className="mb-1.5 block text-[11px] font-medium text-slate-500">
+                                    Assignee
+                                </label>
+
+                                <div className="relative">
+                                    <select
+                                        value={filterAssignee}
+                                        onChange={(e) => setFilterAssignee(e.target.value)}
+                                        className={`w-full cursor-pointer appearance-none rounded-xl border bg-slate-950 py-3 pl-3.5 pr-10 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 ${filterAssignee !== 'All'
+                                            ? 'border-indigo-500/40 text-indigo-300'
+                                            : 'border-slate-800 text-slate-300 hover:border-slate-700'
+                                            }`}
+                                    >
+                                        <option value="All">All Assignees</option>
+                                        <option value="unassigned">Unassigned</option>
+
+                                        {assignees.map((member) => (
+                                            <option key={member._id} value={member._id}>
+                                                {member.name}
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    <ChevronDown
+                                        size={16}
+                                        className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 transition"
+                                    />
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Search Feedback */}
+                        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                                <span>Showing</span>
+
+                                <span className="inline-flex min-w-[24px] items-center justify-center rounded-md border border-indigo-500/20 bg-indigo-500/10 px-2 py-1 text-[11px] font-semibold text-indigo-300">
+                                    {tickets.length}
+                                </span>
+
+                                <span>matching tickets</span>
+                            </div>
+
+                            <p className="text-[11px] text-slate-600">
+                                Search and filters can be combined
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Kanban Board */}
                 {viewMode === 'board' && (
                     <DragDropContext onDragEnd={handleDragEnd}>
-                        <div className="mt-6 grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        <div className="mt-6 grid grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
                             {kanbanColumns.map((column) => (
                                 <div
                                     key={column.id}
-                                    className="min-w-0 rounded-2xl border border-slate-800/80 bg-slate-900/40 p-3"
+                                    className="min-w-0 rounded-2xl border border-slate-700/50 bg-slate-900/50 p-3.5"
                                 >
                                     <div className="mb-3 flex items-center justify-between px-1">
                                         <div className="flex items-center gap-3">
@@ -1003,11 +1231,28 @@ function Tickets() {
                                             <div
                                                 ref={provided.innerRef}
                                                 {...provided.droppableProps}
-                                                className={`space-y-3 rounded-xl transition ${snapshot.isDraggingOver
-                                                    ? 'bg-indigo-500/5'
+                                                className={`min-h-[100px] space-y-4 rounded-xl transition ${snapshot.isDraggingOver
+                                                    ? 'bg-indigo-500/5 ring-1 ring-inset ring-indigo-500/20'
                                                     : ''
                                                     }`}
                                             >
+
+                                                {column.tickets.length === 0 && (
+                                                    <div className="flex min-h-[120px] flex-col items-center justify-center rounded-xl border border-dashed border-slate-700/60 bg-slate-900/30 px-4 py-6 text-center">
+                                                        <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-slate-800/70">
+                                                            <Ticket size={16} className="text-slate-500" />
+                                                        </div>
+
+                                                        <p className="text-xs font-medium text-slate-400">
+                                                            No tickets here
+                                                        </p>
+
+                                                        <p className="mt-1 text-[11px] text-slate-600">
+                                                            Drag a ticket here or create one
+                                                        </p>
+                                                    </div>
+                                                )}
+
                                                 {column.tickets.map((ticket, index) => (
                                                     <Draggable
                                                         key={ticket._id}
@@ -1025,17 +1270,16 @@ function Tickets() {
                                                             >
                                                                 <div className="flex items-start justify-between gap-3">
                                                                     <div className="min-w-0">
-                                                                        <div className="mb-2 flex items-center gap-2">
+                                                                        <div className="mb-1.5 flex items-center gap-2">
                                                                             <Bug
-                                                                                size={14}
-                                                                                className="shrink-0 text-indigo-400"
+                                                                                size={13}
+                                                                                className="shrink-0 text-indigo-400/80"
                                                                             />
-                                                                            <span className="truncate text-[11px] font-medium text-slate-500">
+                                                                            <span className="truncate text-[10px] font-medium tracking-wide text-slate-500">
                                                                                 #{ticket._id.slice(-6).toUpperCase()}
                                                                             </span>
                                                                         </div>
-
-                                                                        <h4 className="break-words text-sm font-semibold leading-5 text-white">
+                                                                        <h4 className="break-words text-[15px] font-semibold leading-6 tracking-tight text-slate-100">
                                                                             {ticket.title}
                                                                         </h4>
                                                                     </div>
