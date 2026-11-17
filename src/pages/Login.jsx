@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
+import {
+    ArrowRight,
+    Eye,
+    EyeOff,
+    Mail,
+    LockKeyhole,
+    CheckCircle2,
+    AlertCircle,
+} from 'lucide-react'
+import AuthLayout from './AuthLayout'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -9,13 +18,8 @@ const validateField = (name, value) => {
         case 'email': {
             const trimmedEmail = value.trim()
 
-            if (!trimmedEmail) {
-                return 'Email address is required'
-            }
-
-            if (trimmedEmail.length > 254) {
-                return 'Email address is too long'
-            }
+            if (!trimmedEmail) return 'Email address is required'
+            if (trimmedEmail.length > 254) return 'Email address is too long'
 
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
                 return 'Enter a valid email address'
@@ -25,10 +29,7 @@ const validateField = (name, value) => {
         }
 
         case 'password': {
-            if (!value) {
-                return 'Password is required'
-            }
-
+            if (!value) return 'Password is required'
             return ''
         }
 
@@ -82,16 +83,12 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-
         setApiError('')
 
         const newErrors = {}
 
         Object.keys(formData).forEach((field) => {
-            newErrors[field] = validateField(
-                field,
-                formData[field]
-            )
+            newErrors[field] = validateField(field, formData[field])
         })
 
         setErrors(newErrors)
@@ -123,14 +120,12 @@ const Login = () => {
                 return
             }
 
-            // Store authentication details
             localStorage.setItem('resolveon-token', data.token)
             localStorage.setItem(
                 'resolveon-user',
                 JSON.stringify(data.user)
             )
 
-            // Navigate to dashboard after successful login
             navigate('/dashboard', {
                 replace: true,
             })
@@ -145,58 +140,63 @@ const Login = () => {
         }
     }
 
-    const inputClass =
-        'w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
-
-    const errorClass = 'mt-1 text-sm text-red-400'
+    const inputClass = (field) =>
+        `w-full rounded-xl border bg-[#1e293b] py-3.5 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:ring-4 ${
+            errors[field]
+                ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/10'
+                : 'border-slate-700 hover:border-slate-600 focus:border-indigo-500 focus:ring-indigo-500/15'
+        }`
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-10">
-            <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
-
-                {/* Brand */}
-                <div className="mb-8 text-center">
-                    <h1 className="text-3xl font-bold text-indigo-400">
-                        Resolveon
-                    </h1>
-
-                    <p className="mt-2 text-sm text-slate-400">
-                        Your workspace for smarter bug tracking
-                    </p>
+        <AuthLayout>
+            {/* Heading */}
+            <div className="mb-8">
+                <div className="mb-3 inline-flex items-center rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1.5 text-xs font-semibold text-indigo-300">
+                    WELCOME BACK
                 </div>
 
-                {/* Heading */}
-                <div className="mb-6">
-                    <h2 className="text-2xl font-semibold text-white">
-                        Welcome back
-                    </h2>
+                <h2 className="text-3xl font-bold tracking-tight text-white">
+                    Sign in to your account
+                </h2>
 
-                    <p className="mt-2 text-sm text-slate-400">
-                        Sign in to continue to Resolveon.
-                    </p>
-                </div>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                    Enter your credentials to access your workspace.
+                </p>
+            </div>
 
-                {/* Registration Success */}
-                {registrationSuccess && (
-                    <p className="mb-5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-400">
+            {/* Registration Success */}
+            {registrationSuccess && (
+                <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3.5">
+                    <CheckCircle2
+                        size={19}
+                        className="mt-0.5 shrink-0 text-emerald-400"
+                    />
+                    <p className="text-sm leading-5 text-emerald-300">
                         {registrationSuccess}
                     </p>
-                )}
+                </div>
+            )}
 
-                {/* Login Form */}
-                <form
-                    onSubmit={handleSubmit}
-                    noValidate
-                    className="space-y-5"
-                >
+            {/* Login Form */}
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
 
-                    {/* Email */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-300">
-                            Email Address
-                        </label>
+                {/* Email */}
+                <div>
+                    <label
+                        htmlFor="email"
+                        className="mb-2 block text-sm font-semibold text-slate-200"
+                    >
+                        Email address
+                    </label>
+
+                    <div className="relative">
+                        <Mail
+                            size={18}
+                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
 
                         <input
+                            id="email"
                             type="email"
                             name="email"
                             value={formData.email}
@@ -205,90 +205,116 @@ const Login = () => {
                             placeholder="you@example.com"
                             autoComplete="email"
                             maxLength={254}
-                            className={inputClass}
+                            className={inputClass('email')}
                         />
-
-                        {errors.email && (
-                            <p className={errorClass}>
-                                {errors.email}
-                            </p>
-                        )}
                     </div>
 
-                    {/* Password */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-300">
-                            Password
-                        </label>
-
-                        <div className="relative">
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                placeholder="Enter your password"
-                                autoComplete="current-password"
-                                className={`${inputClass} pr-12`}
-                            />
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setShowPassword((prev) => !prev)
-                                }
-                                className="absolute inset-y-0 right-3 flex items-center text-slate-400 transition hover:text-white"
-                                aria-label={
-                                    showPassword
-                                        ? 'Hide password'
-                                        : 'Show password'
-                                }
-                            >
-                                {showPassword ? (
-                                    <EyeOff size={20} />
-                                ) : (
-                                    <Eye size={20} />
-                                )}
-                            </button>
-                        </div>
-
-                        {errors.password && (
-                            <p className={errorClass}>
-                                {errors.password}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* API Error */}
-                    {apiError && (
-                        <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
-                            {apiError}
+                    {errors.email && (
+                        <p className="mt-1.5 text-xs font-medium text-red-400">
+                            {errors.email}
                         </p>
                     )}
+                </div>
 
-                    {/* Submit */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full rounded-lg bg-indigo-600 py-3 font-semibold text-white transition hover:bg-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                        {loading ? 'Signing In...' : 'Sign In'}
-                    </button>
-                </form>
+                {/* Password */}
+                <div>
+                    <div className="mb-2 flex items-center justify-between">
+                        <label
+                            htmlFor="password"
+                            className="text-sm font-semibold text-slate-200"
+                        >
+                            Password
+                        </label>
+                    </div>
 
-                {/* Register Link */}
-                <p className="mt-6 text-center text-sm text-slate-400">
+                    <div className="relative">
+                        <LockKeyhole
+                            size={18}
+                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            placeholder="Enter your password"
+                            autoComplete="current-password"
+                            className={`${inputClass('password')} pr-12`}
+                        />
+
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-indigo-400"
+                            aria-label={
+                                showPassword ? 'Hide password' : 'Show password'
+                            }
+                        >
+                            {showPassword ? (
+                                <EyeOff size={19} />
+                            ) : (
+                                <Eye size={19} />
+                            )}
+                        </button>
+                    </div>
+
+                    {errors.password && (
+                        <p className="mt-1.5 text-xs font-medium text-red-400">
+                            {errors.password}
+                        </p>
+                    )}
+                </div>
+
+                {/* API Error */}
+                {apiError && (
+                    <div className="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/10 p-3.5">
+                        <AlertCircle
+                            size={18}
+                            className="mt-0.5 shrink-0 text-red-400"
+                        />
+                        <p className="text-sm leading-5 text-red-300">
+                            {apiError}
+                        </p>
+                    </div>
+                )}
+
+                {/* Submit */}
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="group flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 hover:shadow-indigo-600/30 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    {loading ? 'Signing in...' : 'Sign in'}
+
+                    {!loading && (
+                        <ArrowRight
+                            size={18}
+                            className="transition-transform group-hover:translate-x-1"
+                        />
+                    )}
+                </button>
+            </form>
+
+            {/* Register Link */}
+            <div className="mt-5 border-t border-slate-700/70 pt-6 text-center">
+                <p className="text-sm text-slate-400">
                     Don't have an account?{' '}
                     <Link
                         to="/register"
-                        className="font-medium text-indigo-400 transition hover:text-indigo-300"
+                        className="font-semibold text-indigo-400 transition hover:text-indigo-300"
                     >
-                        Create account
+                        Create an account
                     </Link>
                 </p>
             </div>
-        </div>
+
+            <p className="mt-7 text-center text-xs text-slate-500">
+                Secure access to your Resolveon workspace.
+            </p>
+        </AuthLayout>
     )
 }
 

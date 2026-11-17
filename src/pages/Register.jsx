@@ -1,9 +1,15 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
+    ArrowRight,
     Eye,
     EyeOff,
+    UserRound,
+    Mail,
+    LockKeyhole,
+    AlertCircle,
 } from 'lucide-react'
+import AuthLayout from './AuthLayout'
 
 const API_URL = import.meta.env.VITE_API_URL
 
@@ -12,18 +18,13 @@ const validateField = (name, value, formData) => {
         case 'name': {
             const trimmedName = value.trim()
 
-            if (!trimmedName) {
-                return 'Full name is required'
-            }
-
+            if (!trimmedName) return 'Full name is required'
             if (trimmedName.length < 2) {
                 return 'Name must contain at least 2 characters'
             }
-
             if (trimmedName.length > 50) {
                 return 'Name cannot exceed 50 characters'
             }
-
             if (!/^[\p{L}\p{M}]+(?:[ '-][\p{L}\p{M}]+)*$/u.test(trimmedName)) {
                 return 'Enter a valid name using letters only'
             }
@@ -34,14 +35,10 @@ const validateField = (name, value, formData) => {
         case 'email': {
             const trimmedEmail = value.trim()
 
-            if (!trimmedEmail) {
-                return 'Email address is required'
-            }
-
+            if (!trimmedEmail) return 'Email address is required'
             if (trimmedEmail.length > 254) {
                 return 'Email address is too long'
             }
-
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
                 return 'Enter a valid email address'
             }
@@ -50,34 +47,25 @@ const validateField = (name, value, formData) => {
         }
 
         case 'password': {
-            if (!value) {
-                return 'Password is required'
-            }
-
+            if (!value) return 'Password is required'
             if (value.length < 8) {
                 return 'Password must be at least 8 characters long'
             }
-
             if (value.length > 128) {
                 return 'Password cannot exceed 128 characters'
             }
-
             if (!/[A-Z]/.test(value)) {
                 return 'Password must contain an uppercase letter'
             }
-
             if (!/[a-z]/.test(value)) {
                 return 'Password must contain a lowercase letter'
             }
-
             if (!/[0-9]/.test(value)) {
                 return 'Password must contain a number'
             }
-
             if (!/[^A-Za-z0-9]/.test(value)) {
                 return 'Password must contain a special character'
             }
-
             if (/\s/.test(value)) {
                 return 'Password cannot contain spaces'
             }
@@ -86,10 +74,7 @@ const validateField = (name, value, formData) => {
         }
 
         case 'confirmPassword': {
-            if (!value) {
-                return 'Please confirm your password'
-            }
-
+            if (!value) return 'Please confirm your password'
             if (value !== formData.password) {
                 return 'Passwords do not match'
             }
@@ -129,7 +114,6 @@ const Register = () => {
         setFormData(updatedFormData)
         setApiError('')
 
-        // Validate the current field if it already has an error
         if (errors[name]) {
             setErrors((prev) => ({
                 ...prev,
@@ -141,7 +125,6 @@ const Register = () => {
             }))
         }
 
-        // Revalidate confirm password when password changes
         if (name === 'password' && errors.confirmPassword) {
             setErrors((prev) => ({
                 ...prev,
@@ -165,10 +148,8 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-
         setApiError('')
 
-        // Validate every field
         const newErrors = {}
 
         Object.keys(formData).forEach((field) => {
@@ -181,7 +162,6 @@ const Register = () => {
 
         setErrors(newErrors)
 
-        // Stop submission if validation fails
         if (Object.values(newErrors).some((error) => error)) {
             return
         }
@@ -224,47 +204,50 @@ const Register = () => {
         }
     }
 
-    const inputClass =
-        'w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-white outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
-
-    const errorClass = 'mt-1 text-sm text-red-400'
+    const inputClass = (field) =>
+        `w-full rounded-xl border bg-[#1e293b] py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:ring-4 ${
+            errors[field]
+                ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/10'
+                : 'border-slate-700 hover:border-slate-600 focus:border-indigo-500 focus:ring-indigo-500/15'
+        }`
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-10">
-            <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl">
-
-                {/* Brand */}
-                <div className="mb-8 text-center">
-                    <h1 className="text-3xl font-bold text-indigo-400">
-                        Resolveon
-                    </h1>
-
-                    <p className="mt-2 text-sm text-slate-400">
-                        Your workspace for smarter bug tracking
-                    </p>
+        <AuthLayout>
+            {/* Heading */}
+            <div className="mb-6">
+                <div className="mb-3 inline-flex items-center rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1.5 text-xs font-semibold text-indigo-300">
+                    GET STARTED
                 </div>
 
-                {/* Heading */}
-                <div className="mb-6">
-                    <h2 className="text-2xl font-semibold text-white">
-                        Create an account
-                    </h2>
+                <h2 className="text-3xl font-bold tracking-tight text-white">
+                    Create your account
+                </h2>
 
-                    <p className="mt-2 text-sm text-slate-400">
-                        Get started with Resolveon today.
-                    </p>
-                </div>
+                <p className="mt-2 text-sm leading-6 text-slate-400">
+                    Join Resolveon and bring your team's work together.
+                </p>
+            </div>
 
-                {/* Register Form */}
-                <form onSubmit={handleSubmit} noValidate className="space-y-5">
+            {/* Register Form */}
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
 
-                    {/* Name */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-300">
-                            Full Name
-                        </label>
+                {/* Full Name */}
+                <div>
+                    <label
+                        htmlFor="name"
+                        className="mb-2 block text-sm font-semibold text-slate-200"
+                    >
+                        Full name
+                    </label>
+
+                    <div className="relative">
+                        <UserRound
+                            size={18}
+                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
 
                         <input
+                            id="name"
                             type="text"
                             name="name"
                             value={formData.name}
@@ -273,23 +256,34 @@ const Register = () => {
                             placeholder="Enter your full name"
                             autoComplete="name"
                             maxLength={50}
-                            className={inputClass}
+                            className={inputClass('name')}
                         />
-
-                        {errors.name && (
-                            <p className={errorClass}>
-                                {errors.name}
-                            </p>
-                        )}
                     </div>
 
-                    {/* Email */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-300">
-                            Email Address
-                        </label>
+                    {errors.name && (
+                        <p className="mt-1.5 text-xs font-medium text-red-400">
+                            {errors.name}
+                        </p>
+                    )}
+                </div>
+
+                {/* Email */}
+                <div>
+                    <label
+                        htmlFor="email"
+                        className="mb-2 block text-sm font-semibold text-slate-200"
+                    >
+                        Email address
+                    </label>
+
+                    <div className="relative">
+                        <Mail
+                            size={18}
+                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
 
                         <input
+                            id="email"
                             type="email"
                             name="email"
                             value={formData.email}
@@ -298,136 +292,171 @@ const Register = () => {
                             placeholder="you@example.com"
                             autoComplete="email"
                             maxLength={254}
-                            className={inputClass}
+                            className={inputClass('email')}
                         />
-
-                        {errors.email && (
-                            <p className={errorClass}>
-                                {errors.email}
-                            </p>
-                        )}
                     </div>
 
-                    {/* Password */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-300">
-                            Password
-                        </label>
-
-                        <div className="relative">
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                placeholder="Create a password"
-                                autoComplete="new-password"
-                                maxLength={128}
-                                className={`${inputClass} pr-12`}
-                            />
-
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword((prev) => !prev)}
-                                className="absolute inset-y-0 right-3 flex items-center text-slate-400 transition hover:text-white"
-                                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                            >
-                                {showPassword ? (
-                                    <EyeOff size={20} />
-                                ) : (
-                                    <Eye size={20} />
-                                )}
-                            </button>
-                        </div>
-
-                        <p className="mt-2 text-xs text-slate-500">
-                            8+ characters with uppercase, lowercase,
-                            number and special character.
-                        </p>
-
-                        {errors.password && (
-                            <p className={errorClass}>
-                                {errors.password}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Confirm Password */}
-                    <div>
-                        <label className="mb-2 block text-sm font-medium text-slate-300">
-                            Confirm Password
-                        </label>
-
-                        <div className="relative">
-                            <input
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                name="confirmPassword"
-                                value={formData.confirmPassword}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                placeholder="Confirm your password"
-                                autoComplete="new-password"
-                                maxLength={128}
-                                className={`${inputClass} pr-12`}
-                            />
-
-                            <button
-                                type="button"
-                                onClick={() =>
-                                    setShowConfirmPassword((prev) => !prev)
-                                }
-                                className="absolute inset-y-0 right-3 flex items-center text-slate-400 transition hover:text-white"
-                                aria-label={
-                                    showConfirmPassword
-                                        ? 'Hide confirm password'
-                                        : 'Show confirm password'
-                                }
-                            >
-                                {showConfirmPassword ? (
-                                    <EyeOff size={20} />
-                                ) : (
-                                    <Eye size={20} />
-                                )}
-                            </button>
-                        </div>
-
-                        {errors.confirmPassword && (
-                            <p className={errorClass}>
-                                {errors.confirmPassword}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* API Error */}
-                    {apiError && (
-                        <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
-                            {apiError}
+                    {errors.email && (
+                        <p className="mt-1.5 text-xs font-medium text-red-400">
+                            {errors.email}
                         </p>
                     )}
+                </div>
 
-                    {/* Submit */}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full rounded-lg bg-indigo-600 py-3 font-semibold text-white transition hover:bg-indigo-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                {/* Password */}
+                <div>
+                    <label
+                        htmlFor="password"
+                        className="mb-2 block text-sm font-semibold text-slate-200"
                     >
-                        {loading ? 'Creating Account...' : 'Create Account'}
-                    </button>
-                </form>
+                        Password
+                    </label>
 
-                {/* Login Link */}
-                <p className="mt-6 text-center text-sm text-slate-400">
+                    <div className="relative">
+                        <LockKeyhole
+                            size={18}
+                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            placeholder="Create a password"
+                            autoComplete="new-password"
+                            maxLength={128}
+                            className={`${inputClass('password')} pr-12`}
+                        />
+
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword((prev) => !prev)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-indigo-400"
+                            aria-label={
+                                showPassword ? 'Hide password' : 'Show password'
+                            }
+                        >
+                            {showPassword ? (
+                                <EyeOff size={19} />
+                            ) : (
+                                <Eye size={19} />
+                            )}
+                        </button>
+                    </div>
+
+                    <p className="mt-2 text-xs leading-5 text-slate-500">
+                        Use 8+ characters with uppercase, lowercase,
+                        a number and a special character.
+                    </p>
+
+                    {errors.password && (
+                        <p className="mt-1.5 text-xs font-medium text-red-400">
+                            {errors.password}
+                        </p>
+                    )}
+                </div>
+
+                {/* Confirm Password */}
+                <div>
+                    <label
+                        htmlFor="confirmPassword"
+                        className="mb-2 block text-sm font-semibold text-slate-200"
+                    >
+                        Confirm password
+                    </label>
+
+                    <div className="relative">
+                        <LockKeyhole
+                            size={18}
+                            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+
+                        <input
+                            id="confirmPassword"
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            name="confirmPassword"
+                            value={formData.confirmPassword}
+                            onChange={handleChange}
+                            onBlur={handleBlur}
+                            placeholder="Re-enter your password"
+                            autoComplete="new-password"
+                            maxLength={128}
+                            className={`${inputClass('confirmPassword')} pr-12`}
+                        />
+
+                        <button
+                            type="button"
+                            onClick={() =>
+                                setShowConfirmPassword((prev) => !prev)
+                            }
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-indigo-400"
+                            aria-label={
+                                showConfirmPassword
+                                    ? 'Hide confirm password'
+                                    : 'Show confirm password'
+                            }
+                        >
+                            {showConfirmPassword ? (
+                                <EyeOff size={19} />
+                            ) : (
+                                <Eye size={19} />
+                            )}
+                        </button>
+                    </div>
+
+                    {errors.confirmPassword && (
+                        <p className="mt-1.5 text-xs font-medium text-red-400">
+                            {errors.confirmPassword}
+                        </p>
+                    )}
+                </div>
+
+                {/* API Error */}
+                {apiError && (
+                    <div className="flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/10 p-3.5">
+                        <AlertCircle
+                            size={18}
+                            className="mt-0.5 shrink-0 text-red-400"
+                        />
+                        <p className="text-sm leading-5 text-red-300">
+                            {apiError}
+                        </p>
+                    </div>
+                )}
+
+                {/* Submit */}
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="group flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 hover:shadow-indigo-600/30 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                    {loading ? 'Creating account...' : 'Create account'}
+
+                    {!loading && (
+                        <ArrowRight
+                            size={18}
+                            className="transition-transform group-hover:translate-x-1"
+                        />
+                    )}
+                </button>
+            </form>
+
+            {/* Login Link */}
+            <div className="mt-5 border-t border-slate-700/70 pt-5 text-center">
+                <p className="text-sm text-slate-400">
                     Already have an account?{' '}
                     <Link
                         to="/login"
-                        className="font-medium text-indigo-400 transition hover:text-indigo-300"
+                        className="font-semibold text-indigo-400 transition hover:text-indigo-300"
                     >
                         Sign in
                     </Link>
                 </p>
             </div>
-        </div>
+        </AuthLayout>
     )
 }
 
