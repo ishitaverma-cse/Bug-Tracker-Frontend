@@ -16,9 +16,10 @@ import {
     TrendingUp,
 } from 'lucide-react'
 
-const PROJECTS_API = 'http://localhost:5000/api/projects'
-const TICKETS_API = 'http://localhost:5000/api/tickets'
+const BASE_URL = import.meta.env.VITE_API_URL
 
+const PROJECTS_API = `${BASE_URL}/api/projects`
+const TICKETS_API = `${BASE_URL}/api/tickets`
 const statusConfig = {
     Open: {
         color: 'text-blue-400',

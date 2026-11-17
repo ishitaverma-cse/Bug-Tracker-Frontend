@@ -16,7 +16,7 @@ import {
     X,
 } from 'lucide-react'
 
-const API_URL = 'http://localhost:5000/api/projects'
+const API_URL = import.meta.env.VITE_API_URL
 
 const DashboardLayout = () => {
     const navigate = useNavigate()
@@ -45,7 +45,7 @@ const DashboardLayout = () => {
             try {
                 const token = localStorage.getItem('resolveon-token')
 
-                const response = await fetch(API_URL, {
+                const response = await fetch(`${API_URL}/api/projects`, {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },

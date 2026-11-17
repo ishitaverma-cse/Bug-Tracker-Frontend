@@ -29,9 +29,11 @@ import {
     Send,
 } from 'lucide-react'
 
-const API_URL = 'http://localhost:5000/api/tickets'
-const PROJECT_API_URL = 'http://localhost:5000/api/projects'
-const COMMENT_API_URL = 'http://localhost:5000/api/comments'
+const BASE_URL = import.meta.env.VITE_API_URL
+
+const API_URL = `${BASE_URL}/api/tickets`
+const PROJECT_API_URL = `${BASE_URL}/api/projects`
+const COMMENT_API_URL = `${BASE_URL}/api/comments`
 
 function Tickets() {
     const { projectId } = useParams()

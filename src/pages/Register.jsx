@@ -169,7 +169,7 @@ const Register = () => {
         setLoading(true)
 
         try {
-            const response = await fetch(`${API_URL}/register`, {
+            const response = await fetch(`${API_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -205,10 +205,9 @@ const Register = () => {
     }
 
     const inputClass = (field) =>
-        `w-full rounded-xl border bg-[#1e293b] py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:ring-4 ${
-            errors[field]
-                ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/10'
-                : 'border-slate-700 hover:border-slate-600 focus:border-indigo-500 focus:ring-indigo-500/15'
+        `w-full rounded-xl border bg-[#1e293b] py-3 pl-11 pr-4 text-sm text-white outline-none transition placeholder:text-slate-500 focus:ring-4 ${errors[field]
+            ? 'border-red-500/60 focus:border-red-500 focus:ring-red-500/10'
+            : 'border-slate-700 hover:border-slate-600 focus:border-indigo-500 focus:ring-indigo-500/15'
         }`
 
     return (
